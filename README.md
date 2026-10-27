@@ -104,3 +104,7 @@ The included app listens on `0.0.0.0` and defaults to port 5000. For a domain de
 - `schema.sql` — MySQL database and tables
 - `create_admin.py` — securely prompt for the first admin account
 - `.env.example` — configuration template
+
+#This is the site link
+
+https://projectzephyr.onrender.com/
