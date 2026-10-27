@@ -81,15 +81,15 @@ Copy that backup to the USB drive and import it on the destination after MySQL i
 
 ## Deploy the web app on Render
 
-The repository includes `render.yaml` for the Flask web service. Render runs the app with Gunicorn and creates a random `SECRET_KEY`. The app uses MySQL, so you must first provision a reachable MySQL 8 database with a provider that allows connections from Render. Render's managed relational database product is PostgreSQL; it does not provide a managed MySQL database. Keep the database credentials private.
+The repository includes `render.yaml` for the Flask web service. Render runs the app with Gunicorn and creates a random `SECRET_KEY`. The app uses MySQL, so provision an Aiven for MySQL service and allow connections from Render. Keep the database credentials private.
 
-1. Push this project to a GitHub repository and create a MySQL 8 database with a provider that permits external connections. Note its host, port, database name, username, and password. Keep the database empty for now.
-2. In Render, choose **New > Blueprint**, connect the repository, and apply the `render.yaml` blueprint. For the prompted values, enter `DB_HOST`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` from the MySQL provider. Render generates `SECRET_KEY` and sets `DB_PORT` to `3306`; change that value if your provider uses another port.
-3. In the MySQL provider's SQL console or client, select the provisioned database and run `schema-hosted.sql`. This creates the tables without trying to create a database on the provider's behalf.
+1. Create an Aiven for MySQL service. In Aiven's service overview, create/select a database and note its host, port, database name, username, and password. Download the service CA certificate from Aiven's connection information.
+2. In Render, choose **New > Blueprint**, connect this repository, and apply the `render.yaml` blueprint. Enter the Aiven values for `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD`. In the Render service's **Environment > Secret Files**, upload the Aiven CA certificate as `aiven-ca.pem`; set `DB_SSL_CA` to `/etc/secrets/aiven-ca.pem`. The app verifies the server certificate and hostname when this setting is present. Render generates `SECRET_KEY`.
+3. In Aiven's SQL console or a MySQL client, select the provisioned database and run `schema-hosted.sql`. This creates the tables without trying to create a database on the provider's behalf.
 4. Create the first administrator from a trusted computer using the hosted DB credentials in a local, uncommitted `.env` file. Then run `python create_admin.py`. Remove those temporary credentials from `.env` when finished. Alternatively, run the script from a Render shell if your service plan provides one.
 5. Wait for the Render deploy to finish and open the service's `onrender.com` URL. Pushes to the connected branch deploy automatically.
 
-The Render service cannot be fully deployed from this project folder alone: it needs a Git repository connected in your Render account, and the database host and credentials must come from your chosen MySQL provider.
+The Render service cannot be fully deployed from this project folder alone: it needs a Git repository connected in your Render account, and the database host and credentials must come from your Aiven service.
 
 ## Host on a public domain
 

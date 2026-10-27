@@ -14,13 +14,17 @@ app.secret_key = os.getenv("SECRET_KEY", "replace-this-with-a-random-secret")
 
 
 def db_connection():
-    return mysql.connector.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        port=int(os.getenv("DB_PORT", "3306")),
-        user=os.getenv("DB_USER", "root"),
-        password=os.getenv("DB_PASSWORD", ""),
-        database=os.getenv("DB_NAME", "item_inventory"),
-    )
+    options = {
+        "host": os.getenv("DB_HOST", "localhost"),
+        "port": int(os.getenv("DB_PORT", "3306")),
+        "user": os.getenv("DB_USER", "root"),
+        "password": os.getenv("DB_PASSWORD", ""),
+        "database": os.getenv("DB_NAME", "item_inventory"),
+    }
+    ssl_ca = os.getenv("DB_SSL_CA")
+    if ssl_ca:
+        options.update(ssl_ca=ssl_ca, ssl_verify_cert=True, ssl_verify_identity=True)
+    return mysql.connector.connect(**options)
 
 
 def query(sql, params=(), one=False, commit=False):

@@ -17,5 +17,7 @@ services:
         sync: false
       - key: DB_PASSWORD
         sync: false
+      - key: DB_SSL_CA
+        sync: false
       - key: FLASK_DEBUG
         value: "0"
