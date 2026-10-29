@@ -2,6 +2,8 @@
 
 A Flask and MySQL inventory and ordering app with an administrator dashboard and customer storefront. Admins can add, edit, hide, and restock products and update order status. Customers can register, browse/search products, keep a basket, place orders, and review order history. Passwords are stored as hashes; the app never stores card information or takes payments.
 
+The admin dashboard lists all orders and their line items. Cancelling an order restores its stock once; cancelled orders cannot be reopened.
+
 ## Requirements
 
 - Python 3.10 or newer
@@ -103,8 +105,20 @@ The included app listens on `0.0.0.0` and defaults to port 5000. For a domain de
 - `templates/` and `static/style.css` — responsive storefront, account pages, and admin dashboard
 - `schema.sql` — MySQL database and tables
 - `create_admin.py` — securely prompt for the first admin account
+- `simple_inventory.py` and `simple_inventory.sql` — standalone terminal/IDLE edition and its separate MySQL database
 - `.env.example` — configuration template
 
 ## This is the site link
 
 https://projectzephyr.onrender.com/
+
+## Simple menu-driven Python IDLE edition
+
+The website's **Simpler project** page (`/simple-project`) shows copy buttons for the standalone terminal program and its SQL. The same files are included as `simple_inventory.py` and `simple_inventory.sql`.
+
+1. Run `simple_inventory.sql` in MySQL Workbench. It creates the separate database `item_inventory_simple`.
+2. Install the MySQL connector with `py -m pip install mysql-connector-python`.
+3. Open `simple_inventory.py` in IDLE and change `DB_CONFIG` to match your local MySQL username and password.
+4. Choose **Run → Run Module** in IDLE. At the first menu, choose **Create first admin** once. Customers can register from the same menu.
+
+The terminal edition provides basic administrator and customer menus, product/stock management, order placement, customer order history, and admin order-status changes. Its initial admin setup is intended for a local classroom/demo environment; do not expose it as a public account-creation mechanism.

@@ -185,7 +185,7 @@ An order is linked to its customer through `user_id` and stores `total`, `status
 
 Checkout creates the order and its item rows in one database transaction. It also subtracts purchased quantities from product stock before committing. If a product is missing, inactive, or insufficiently stocked, the transaction is rolled back and the user is returned to the basket with a message. The row lock reduces the risk of two concurrent checkouts both selling the final unit.
 
-There is a known limitation: changing an order to cancelled does not currently restore the product quantities. There is also no separate fulfillment event history. A future implementation should make cancellation transactional and idempotent, record who performed it, restore inventory exactly once, and define behavior for orders that were already processed or completed.
+Cancelling an order restores linked product quantities inside the order-status transaction. Repeating cancellation does not restore them a second time, and a cancelled order cannot be reopened in the current workflow. There is no separate fulfillment event history or staff audit record. A future implementation should record who changed the order and define cancellation rules for orders that have already been processed or completed.
 
 \newpage
 
@@ -381,7 +381,7 @@ Test data should be isolated from real customer data. Automated tests can use a 
 
 ## Page 36 — Known Limitations
 
-The most important functional limitations are the absence of payment processing, shipping, addresses, notifications, product image upload, password reset, user administration, and inventory audit history. The application uses a session basket that is not shared between devices. Search is basic. The admin order list is limited to recent records and omits an order-detail workflow.
+The most important functional limitations are the absence of payment processing, shipping, addresses, notifications, product image upload, password reset, user administration, and inventory audit history. The application uses a session basket that is not shared between devices. Search is basic. The admin can review every order and its line items, but there is no dedicated order-detail page or audit timeline.
 
 Order cancellation currently changes the status but does not restore inventory. This must be addressed before staff use cancellation as a final business action. There is no CSRF protection or login throttling. The default Flask secret is a placeholder, and safe deployment depends on operator configuration. The code has no formal migration system, test suite, or operational monitoring.
 

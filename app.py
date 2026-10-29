@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from functools import wraps
@@ -40,6 +41,14 @@ def query(sql, params=(), one=False, commit=False):
         conn.close()
 
 
+def rollback_quietly(conn):
+    if conn:
+        try:
+            conn.rollback()
+        except mysql.connector.Error:
+            app.logger.exception("Could not roll back database transaction")
+
+
 def login_required(role=None):
     def decorator(view):
         @wraps(view)
@@ -70,6 +79,14 @@ def index():
     else:
         products = query("SELECT * FROM products WHERE active=1 ORDER BY created_at DESC")
     return render_template("index.html", products=products, search=search)
+
+
+@app.route("/simple-project")
+def simple_project():
+    root = Path(__file__).resolve().parent
+    menu_code = (root / "simple_inventory.py").read_text(encoding="utf-8")
+    sql_code = (root / "simple_inventory.sql").read_text(encoding="utf-8")
+    return render_template("simple_project.html", menu_code=menu_code, sql_code=sql_code)
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -168,8 +185,9 @@ def checkout():
     if not cart_data:
         flash("Your basket is empty.", "warning")
         return redirect(url_for("cart"))
-    conn = db_connection()
+    conn = None
     try:
+        conn = db_connection()
         cur = conn.cursor(dictionary=True)
         total = Decimal("0")
         checked = []
@@ -192,11 +210,22 @@ def checkout():
         flash(f"Order #{order_id} placed successfully.", "success")
         return redirect(url_for("my_orders"))
     except ValueError as exc:
-        conn.rollback()
+        rollback_quietly(conn)
         flash(str(exc), "warning")
         return redirect(url_for("cart"))
+    except mysql.connector.Error:
+        rollback_quietly(conn)
+        app.logger.exception("Database error while placing order")
+        flash("We could not place your order right now. Your basket is still saved; please try again.", "error")
+        return redirect(url_for("cart"))
+    except Exception:
+        rollback_quietly(conn)
+        app.logger.exception("Unexpected error while placing order")
+        flash("Something went wrong while placing your order. Your basket is still saved; please try again.", "error")
+        return redirect(url_for("cart"))
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 
 @app.route("/orders")
@@ -213,7 +242,9 @@ def my_orders():
 def admin_dashboard():
     products = query("SELECT * FROM products ORDER BY active DESC,name")
     stats = query("SELECT (SELECT COUNT(*) FROM products WHERE active=1) AS products, (SELECT COALESCE(SUM(stock),0) FROM products WHERE active=1) AS units, (SELECT COUNT(*) FROM orders WHERE status='pending') AS pending_orders, (SELECT COUNT(*) FROM products WHERE active=1 AND stock<=5) AS low_stock", one=True)
-    orders = query("SELECT o.*,u.name AS customer_name FROM orders o JOIN users u ON u.id=o.user_id ORDER BY o.created_at DESC LIMIT 8")
+    orders = query("SELECT o.*,u.name AS customer_name FROM orders o JOIN users u ON u.id=o.user_id ORDER BY o.created_at DESC")
+    for order in orders:
+        order["items"] = query("SELECT * FROM order_items WHERE order_id=%s", (order["id"],))
     return render_template("admin.html", products=products, stats=stats, orders=orders)
 
 
@@ -255,8 +286,31 @@ def update_order_status(order_id):
     if status not in ("pending", "processing", "completed", "cancelled"):
         flash("Invalid order status.", "error")
     else:
-        query("UPDATE orders SET status=%s WHERE id=%s", (status, order_id), commit=True)
-        flash("Order status updated.", "success")
+        conn = db_connection()
+        try:
+            cur = conn.cursor(dictionary=True)
+            cur.execute("SELECT status FROM orders WHERE id=%s FOR UPDATE", (order_id,))
+            order = cur.fetchone()
+            if not order:
+                flash("Order not found.", "error")
+            elif order["status"] == "cancelled" and status != "cancelled":
+                flash("A cancelled order cannot be reopened. Create a new order if needed.", "warning")
+            else:
+                if status == "cancelled" and order["status"] != "cancelled":
+                    cur.execute("SELECT product_id,quantity FROM order_items WHERE order_id=%s", (order_id,))
+                    for item in cur.fetchall():
+                        if item["product_id"] is not None:
+                            cur.execute("UPDATE products SET stock=stock+%s WHERE id=%s",
+                                        (item["quantity"], item["product_id"]))
+                cur.execute("UPDATE orders SET status=%s WHERE id=%s", (status, order_id))
+                conn.commit()
+                flash("Order status updated." + (" Stock has been restored." if status == "cancelled" else ""), "success")
+        except mysql.connector.Error:
+            rollback_quietly(conn)
+            app.logger.exception("Database error while updating order status")
+            flash("Could not update this order. Please try again.", "error")
+        finally:
+            conn.close()
     return redirect(url_for("admin_dashboard"))
 
 
