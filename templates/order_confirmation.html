@@ -1,0 +1,18 @@
+{% extends 'base.html' %}{% block title %}Order confirmed{% endblock %}{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static',filename='confirmation.css') }}">{% endblock %}{% block content %}
+<section class="confirmation-wrap">
+  <div class="confirmation-card">
+    <div class="confirmation-icon" aria-hidden="true">✓</div>
+    <span class="eyebrow">ORDER #{{ order_id }}</span>
+    <h1>Successfully ordered!</h1>
+    <p class="confirmation-copy">Your order has been saved. The store administrator can now see it in the dashboard.</p>
+    <div class="confirmation-lines">
+      {% for product, quantity in items %}
+      <div><span>{{ product.name }} <small>× {{ quantity }}</small></span><strong>${{ '%.2f'|format(product.price * quantity) }}</strong></div>
+      {% endfor %}
+    </div>
+    <div class="confirmation-total"><span>Order total</span><strong>${{ '%.2f'|format(total) }}</strong></div>
+    <a class="btn btn-primary btn-wide" href="{{ url_for('index') }}">Continue shopping</a>
+    <a class="confirmation-link" href="{{ url_for('my_orders') }}">View my order history</a>
+  </div>
+</section>
+{% endblock %}

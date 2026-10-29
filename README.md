@@ -2,7 +2,7 @@
 
 A Flask and MySQL inventory and ordering app with an administrator dashboard and customer storefront. Admins can add, edit, hide, and restock products and update order status. Customers can register, browse/search products, keep a basket, place orders, and review order history. Passwords are stored as hashes; the app never stores card information or takes payments.
 
-The admin dashboard lists all orders and their line items. Cancelling an order restores its stock once; cancelled orders cannot be reopened.
+The admin dashboard lists all orders and their line items. After checkout commits, customers see an order confirmation with the order number and total. Cancelling an order restores its stock once; cancelled orders cannot be reopened.
 
 ## Requirements
 

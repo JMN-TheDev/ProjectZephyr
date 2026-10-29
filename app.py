@@ -207,8 +207,12 @@ def checkout():
             cur.execute("UPDATE products SET stock=stock-%s WHERE id=%s", (qty, product["id"]))
         conn.commit()
         session["cart"] = {}
-        flash(f"Order #{order_id} placed successfully.", "success")
-        return redirect(url_for("my_orders"))
+        return render_template(
+            "order_confirmation.html",
+            order_id=order_id,
+            total=total,
+            items=checked,
+        )
     except ValueError as exc:
         rollback_quietly(conn)
         flash(str(exc), "warning")
