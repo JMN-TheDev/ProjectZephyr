@@ -52,7 +52,7 @@
     <thead><tr><th>Order</th><th>Customer</th><th>Date</th><th>Items</th><th>Total</th><th>Status</th><th>Update status</th></tr></thead>
     <tbody>{% for o in orders %}
       <tr><td><strong>#{{ o.id }}</strong></td><td>{{ o.customer_name }}</td><td>{{ o.created_at.strftime('%b %d, %Y') }}</td>
-        <td><details><summary>{{ o.items|length }} line(s)</summary><div class="order-detail-list">{% for item in o.items %}<div>{{ item.product_name }} × {{ item.quantity }} <span>&#36;{{ '%.2f'|format(item.unit_price * item.quantity) }}</span></div>{% endfor %}</div></details></td>
+        <td><details><summary>{{ o['items']|length }} line(s)</summary><div class="order-detail-list">{% for item in o['items'] %}<div>{{ item.product_name }} × {{ item.quantity }} <span>&#36;{{ '%.2f'|format(item.unit_price * item.quantity) }}</span></div>{% endfor %}</div></details></td>
         <td>&#36;{{ '%.2f'|format(o.total) }}</td><td><span class="status status-{{ o.status }}">{{ o.status }}</span></td>
         <td><form class="status-form" method="post" action="{{ url_for('update_order_status',order_id=o.id) }}"><select name="status">{% for s in ['pending','processing','completed','cancelled'] %}<option value="{{ s }}" {{ 'selected' if s==o.status else '' }}>{{ s|capitalize }}</option>{% endfor %}</select><button class="icon-button" aria-label="Save status for order {{ o.id }}">↗</button></form></td>
       </tr>
